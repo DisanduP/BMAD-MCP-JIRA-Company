@@ -90,5 +90,24 @@
   "[xml]": {
     "editor.defaultFormatter": "redhat.vscode-xml"
   },
-  "xml.format.maxLineWidth": 140
+  "xml.format.maxLineWidth": 140,
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "JIRA_URL",
+        "-e", "JIRA_USERNAME",
+        "-e", "JIRA_API_TOKEN",
+        "ghcr.io/sooperset/mcp-atlassian:latest"
+      ],
+      "env": {
+        "JIRA_URL": "https://disandup6.atlassian.net",
+        "JIRA_USERNAME": "disandup6@gmail.com",
+        "JIRA_API_TOKEN": "ATATT3xFfGF0MAWRGIIFPkwroDdjySukZ0-P0iNf1XYzqO6egB-oVnLAHbklKzivRjrprz0TX-AnzooV2IdbpA6lifxJhArUyh9MhbYofX3ikpQGqmmZaYWBI8UpQizbnb7qlpG7onMhSQ3qpukB3wSExKET55GA9e7U13dnn17aMNRBVfgYoNw=8696FE6F"
+      }
+    }
+  }
 }

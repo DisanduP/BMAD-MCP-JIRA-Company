@@ -39,4 +39,5 @@ validation: "{installed_path}/checklist.md"
 installer_output_folder: "{custom_module_location}/{{module_code}}"
 
 standalone: true
+
 # Web bundle configuration
