@@ -388,6 +388,12 @@ function App() {
     }
   };
 
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.body.className = darkMode ? '' : 'dark-mode';
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
@@ -528,6 +534,9 @@ function App() {
                   Priority
                 </button>
               </div>
+              <button onClick={toggleDarkMode} className="dark-mode-toggle">
+                {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+              </button>
               <button onClick={selectAllTasks} className="select-all-button">
                 Select All
               </button>
