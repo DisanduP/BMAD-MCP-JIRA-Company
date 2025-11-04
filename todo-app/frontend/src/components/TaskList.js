@@ -1,6 +1,43 @@
 import React, { useState } from 'react';
 
 const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = new Set(), onToggleSelection, onStartTask, onSubmitForReview, onAddNotes }) => {
+
+  const formatDueDate = (dueDate) => {
+    if (!dueDate) return null;
+
+    const date = new Date(dueDate);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const diffTime = date - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return { text: `${Math.abs(diffDays)} days overdue`, className: 'overdue' };
+    } else if (diffDays === 0) {
+      return { text: 'Due today', className: 'due-today' };
+    } else if (diffDays === 1) {
+      return { text: 'Due tomorrow', className: 'due-soon' };
+    } else if (diffDays <= 7) {
+      return { text: `Due in ${diffDays} days`, className: 'due-soon' };
+    } else {
+      return { text: date.toLocaleDateString(), className: 'normal' };
+    }
+  };
+
+  const getTaskDateClass = (dueDate, completed) => {
+    if (completed || !dueDate) return '';
+
+    const date = new Date(dueDate);
+    const today = new Date();
+
+    if (date < today) return 'task-overdue';
+    if (date.toDateString() === today.toDateString()) return 'task-due-today';
+    if (date.getTime() - today.getTime() < 7 * 24 * 60 * 60 * 1000) return 'task-due-soon';
+
+    return '';
+  };
   const [expandedNotes, setExpandedNotes] = useState(new Set());
 
   const toggleNotes = (taskId) => {
@@ -15,7 +52,8 @@ const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = n
   if (tasks.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">📝</div>
+        <div
+          className={getTaskDateClass(task.dueDate, task.completed)} className="empty-icon">📝</div>
         <h3 className="empty-title">No tasks yet</h3>
         <p className="empty-text">Create your first task to get started!</p>
       </div>
@@ -66,11 +104,14 @@ const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = n
                     {task.priority}
                   </span>
 
-                  {task.dueDate && (
-                    <span className="due-date">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </span>
-                  )}
+                  {task.dueDate && (() => {
+                    const dateInfo = formatDueDate(task.dueDate);
+                    return (
+                      <span className={`due-date due-date-${dateInfo.className}`}>
+                        📅 {dateInfo.text}
+                      </span>
+                    );
+                  })()}
 
                   {task.jiraIssueKey && (
                     <span className="jira-link">
