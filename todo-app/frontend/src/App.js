@@ -17,6 +17,10 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [sortBy, setSortBy] = useState('created'); // created, dueDate, priority
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showOverdueOnly, setShowOverdueOnly] = useState(false);
 
   // Debounce search term to avoid too many API calls
   useEffect(() => {
@@ -314,6 +318,76 @@ function App() {
     }
   };
 
+  // Sort tasks function
+  const sortTasks = (tasksToSort) => {
+    return [...tasksToSort].sort((a, b) => {
+      switch (sortBy) {
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        case 'priority':
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        case 'created':
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
+  };
+
+  // Filter tasks by date
+  const filterTasksByDate = (tasksToFilter) => {
+    return tasksToFilter.filter(task => {
+      if (showOverdueOnly) {
+        if (!task.dueDate || task.completed) return false;
+        return new Date(task.dueDate) < new Date();
+      }
+
+      if (dateFrom && task.dueDate) {
+        if (new Date(task.dueDate) < new Date(dateFrom)) return false;
+      }
+
+      if (dateTo && task.dueDate) {
+        if (new Date(task.dueDate) > new Date(dateTo)) return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Get filtered and sorted tasks
+  const filteredTasks = filterTasksByDate(sortedTasks);
+
+  // Get sorted tasks
+  const sortedTasks = sortTasks(tasks);
+
+  // Mark all tasks as complete
+  const markAllComplete = async () => {
+    if (window.confirm('Are you sure you want to mark all tasks as complete?')) {
+      try {
+        const response = await fetch('http://localhost:3001/api/tasks/mark-all-complete', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          // Refresh tasks
+          fetchTasks();
+          alert('All tasks marked as complete!');
+        } else {
+          alert('Failed to mark all tasks complete');
+        }
+      } catch (error) {
+        console.error('Error marking all complete:', error);
+        alert('Error marking all tasks complete');
+      }
+    }
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
@@ -434,6 +508,26 @@ function App() {
                   </select>
                 </div>
               </div>
+              <div className="sort-buttons">
+                <button
+                  onClick={() => setSortBy('created')}
+                  className={`sort-button ${sortBy === 'created' ? 'active' : ''}`}
+                >
+                  Newest First
+                </button>
+                <button
+                  onClick={() => setSortBy('dueDate')}
+                  className={`sort-button ${sortBy === 'dueDate' ? 'active' : ''}`}
+                >
+                  Due Date
+                </button>
+                <button
+                  onClick={() => setSortBy('priority')}
+                  className={`sort-button ${sortBy === 'priority' ? 'active' : ''}`}
+                >
+                  Priority
+                </button>
+              </div>
               <button onClick={selectAllTasks} className="select-all-button">
                 Select All
               </button>
@@ -512,6 +606,7 @@ function App() {
             </div>
           ) : (
             <TaskList
+              tasks={filteredTasks}
               tasks={tasks}
               onEdit={(task) => {
                 setEditingTask(task);

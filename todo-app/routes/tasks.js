@@ -484,4 +484,26 @@ router.post('/check-merged-prs', async (req, res) => {
   }
 });
 
+// Mark all tasks as complete
+router.put('/mark-all-complete', async (req, res) => {
+  try {
+    const result = await Task.updateMany(
+      { completed: false },
+      {
+        completed: true,
+        updatedAt: new Date()
+      }
+    );
+
+    res.json({
+      success: true,
+      message: `Marked ${result.modifiedCount} tasks as complete`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error marking all complete:', error);
+    res.status(500).json({ error: 'Failed to mark all tasks complete' });
+  }
+});
+
 module.exports = router;
