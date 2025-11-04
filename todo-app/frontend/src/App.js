@@ -17,6 +17,10 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [sortBy, setSortBy] = useState('created');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showOverdueOnly, setShowOverdueOnly] = useState(false);
 
   // Debounce search term to avoid too many API calls
   useEffect(() => {
@@ -314,6 +318,48 @@ function App() {
     }
   };
 
+  // Sort tasks function
+  const sortTasks = (tasksToSort) => {
+    return [...tasksToSort].sort((a, b) => {
+      switch (sortBy) {
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        case 'priority':
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        case 'created':
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
+  };
+
+  // Filter tasks by date
+  const filterTasksByDate = (tasksToFilter) => {
+    return tasksToFilter.filter(task => {
+      if (showOverdueOnly) {
+        if (!task.dueDate || task.completed) return false;
+        return new Date(task.dueDate) < new Date();
+      }
+
+      if (dateFrom && task.dueDate) {
+        if (new Date(task.dueDate) < new Date(dateFrom)) return false;
+      }
+
+      if (dateTo && task.dueDate) {
+        if (new Date(task.dueDate) > new Date(dateTo)) return false;
+      }
+
+      return true;
+    });
+  };
+
+  const sortedTasks = sortTasks(tasks);
+  const filteredTasks = filterTasksByDate(sortedTasks);
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
@@ -434,6 +480,58 @@ function App() {
                   </select>
                 </div>
               </div>
+              <div className="sort-buttons">
+                <button
+                  onClick={() => setSortBy('created')}
+                  className={`sort-button ${sortBy === 'created' ? 'active' : ''}`}
+                >
+                  Newest
+                </button>
+                <button
+                  onClick={() => setSortBy('dueDate')}
+                  className={`sort-button ${sortBy === 'dueDate' ? 'active' : ''}`}
+                >
+                  Due Date
+                </button>
+                <button
+                  onClick={() => setSortBy('priority')}
+                  className={`sort-button ${sortBy === 'priority' ? 'active' : ''}`}
+                >
+                  Priority
+                </button>
+              </div>
+
+              <div className="date-filter-container">
+                <div className="date-filter-group">
+                  <label>From Date</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="date-filter-input"
+                  />
+                </div>
+                <div className="date-filter-group">
+                  <label>To Date</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="date-filter-input"
+                  />
+                </div>
+                <div className="date-filter-group">
+                  <label>&nbsp;</label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+                    <input
+                      type="checkbox"
+                      checked={showOverdueOnly}
+                      onChange={(e) => setShowOverdueOnly(e.target.checked)}
+                    />
+                    Overdue Only
+                  </label>
+                </div>
+              </div>
               <button onClick={selectAllTasks} className="select-all-button">
                 Select All
               </button>
@@ -512,6 +610,7 @@ function App() {
             </div>
           ) : (
             <TaskList
+              tasks={filteredTasks}
               tasks={tasks}
               onEdit={(task) => {
                 setEditingTask(task);

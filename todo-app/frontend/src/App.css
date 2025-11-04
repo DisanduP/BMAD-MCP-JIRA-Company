@@ -1077,3 +1077,89 @@ body {
 .note-pr-link a:hover {
   text-decoration: underline;
 }
+
+
+/* Overdue Task Styling */
+.task-overdue {
+  border-left: 4px solid #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.task-overdue .task-title {
+  color: #dc3545;
+}
+
+.task-due-soon {
+  border-left: 4px solid #ffc107;
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+.task-due-today .task-title {
+  color: #fd7e14;
+  font-weight: bold;
+}
+
+/* Sort buttons */
+.sort-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.sort-button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.sort-button:hover {
+  background: var(--bg-hover);
+}
+
+.sort-button.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+/* Date filters */
+.date-filter-container {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.date-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.date-filter-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.date-filter-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.date-filter-input:focus {
+  outline: none;
+  border-color: #007bff;
+}

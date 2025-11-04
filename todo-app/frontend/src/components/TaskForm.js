@@ -31,11 +31,28 @@ const TaskForm = ({ task, onSubmit, onCancel }) => {
     }
   }, [task]);
 
+  const validateDueDate = (dateString) => {
+    if (!dateString) return true;
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return 'Due date cannot be in the past';
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.title.trim()) {
       alert('Title is required');
+      return;
+    }
+
+    const dateValidation = validateDueDate(formData.dueDate);
+    if (dateValidation !== true) {
+      alert(dateValidation);
       return;
     }
 
