@@ -1156,3 +1156,30 @@ body {
   color: white;
   border-color: var(--accent-color);
 }
+
+
+/* Mark All Complete Button */
+.mark-all-complete-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 10px;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.mark-all-complete-button:hover {
+  background: linear-gradient(135deg, #218838, #1aa085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.mark-all-complete-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}

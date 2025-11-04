@@ -363,6 +363,31 @@ function App() {
   // Get sorted tasks
   const sortedTasks = sortTasks(tasks);
 
+  // Mark all tasks as complete
+  const markAllComplete = async () => {
+    if (window.confirm('Are you sure you want to mark all tasks as complete?')) {
+      try {
+        const response = await fetch('http://localhost:3001/api/tasks/mark-all-complete', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          // Refresh tasks
+          fetchTasks();
+          alert('All tasks marked as complete!');
+        } else {
+          alert('Failed to mark all tasks complete');
+        }
+      } catch (error) {
+        console.error('Error marking all complete:', error);
+        alert('Error marking all tasks complete');
+      }
+    }
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
