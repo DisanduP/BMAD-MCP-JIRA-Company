@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "atlassian-jira": {
+            "command": "npx",
+            "args": [
+                "@aashari/mcp-server-atlassian-jira"
+            ],
+            "env": {
+                "ATLASSIAN_SITE_NAME": "disandup6",
+                "ATLASSIAN_USER_EMAIL": "disandup6@gmail.com",
+                "ATLASSIAN_API_TOKEN": "YOUR_ATLASSIAN_API_TOKEN"
+            }
+        }
+    }
+}
