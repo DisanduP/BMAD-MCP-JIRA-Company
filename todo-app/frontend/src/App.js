@@ -17,6 +17,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("All");
   const [sortBy, setSortBy] = useState('created'); // created, dueDate, priority
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -537,6 +538,17 @@ function App() {
               <button onClick={toggleDarkMode} className="dark-mode-toggle">
                 {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
               </button>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="task-filter"
+              >
+                <option value="All">All Categories</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="UI Enhancement">UI Enhancement</option>
+                <option value="Bug Fix">Bug Fix</option>
+              </select>
               <button onClick={selectAllTasks} className="select-all-button">
                 Select All
               </button>
