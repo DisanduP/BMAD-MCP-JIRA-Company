@@ -358,8 +358,14 @@ function App() {
     });
   };
 
+  // Filter tasks based on selected category
+  const categoryFilteredTasks = tasks.filter(task => {
+    if (filterCategory === "All") return true;
+    return task.category === filterCategory;
+  });
+
   // Get filtered and sorted tasks
-  const filteredTasks = filterTasksByDate(sortedTasks);
+  const filteredTasks = filterTasksByDate(sortTasks(categoryFilteredTasks));
 
   // Get sorted tasks
   const sortedTasks = sortTasks(tasks);
@@ -628,7 +634,6 @@ function App() {
           ) : (
             <TaskList
               tasks={filteredTasks}
-              tasks={tasks}
               onEdit={(task) => {
                 setEditingTask(task);
                 setShowForm(true);

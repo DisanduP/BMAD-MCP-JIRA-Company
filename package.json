@@ -42,7 +42,8 @@
     "test": "node test/test-agent-schema.js",
     "test:coverage": "c8 --reporter=text --reporter=html node test/test-agent-schema.js",
     "validate:bundles": "node tools/validate-bundles.js",
-    "validate:schemas": "node tools/validate-agent-schema.js"
+    "validate:schemas": "node tools/validate-agent-schema.js",
+    "verify-feature": "node tools/verify-feature.js"
   },
   "lint-staged": {
     "*.{js,cjs,mjs}": [

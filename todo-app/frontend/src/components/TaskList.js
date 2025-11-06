@@ -52,8 +52,7 @@ const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = n
   if (tasks.length === 0) {
     return (
       <div className="empty-state">
-        <div
-          className={getTaskDateClass(task.dueDate, task.completed)} className="empty-icon">📝</div>
+        <div className="empty-icon">📝</div>
         <h3 className="empty-title">No tasks yet</h3>
         <p className="empty-text">Create your first task to get started!</p>
       </div>
