@@ -1183,3 +1183,32 @@ body {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
 }
+
+
+/* Task Filter Dropdown */
+.task-filter {
+  padding: 10px 15px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: white;
+  cursor: pointer;
+  margin-right: 10px;
+  min-width: 150px;
+  transition: all 0.3s ease;
+}
+
+.task-filter:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.task-filter:hover {
+  border-color: #007bff;
+}
+
+.task-filter option {
+  padding: 5px;
+}
