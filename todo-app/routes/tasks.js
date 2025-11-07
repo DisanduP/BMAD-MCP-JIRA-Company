@@ -506,4 +506,139 @@ router.put('/mark-all-complete', async (req, res) => {
   }
 });
 
+// GET /api/tasks/export - Export all tasks as JSON
+router.get('/export', async (req, res) => {
+  try {
+    // Create export data with metadata
+    const exportData = {
+      metadata: {
+        exportDate: new Date().toISOString(),
+        version: '1.0',
+        totalTasks: tasks.length,
+        appVersion: 'v6-alpha'
+      },
+      tasks: tasks.map(task => ({
+        // Exclude internal fields like _id, jiraIssueKey, prNumber, etc.
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        category: task.category,
+        dueDate: task.dueDate,
+        completed: task.completed,
+        status: task.status,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        completionNotes: task.completionNotes || []
+      }))
+    };
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="tasks-export-${new Date().toISOString().split('T')[0]}.json"`);
+
+    res.json(exportData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/tasks/import - Import tasks from JSON
+router.post('/import', async (req, res) => {
+  try {
+    const { importData, options = {} } = req.body;
+
+    if (!importData || !importData.tasks || !Array.isArray(importData.tasks)) {
+      return res.status(400).json({ error: 'Invalid import data format. Expected { tasks: [...] }' });
+    }
+
+    const { skipDuplicates = false, updateExisting = false } = options;
+    let importedCount = 0;
+    let skippedCount = 0;
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const importedTask of importData.tasks) {
+      try {
+        // Validate required fields
+        if (!importedTask.title || typeof importedTask.title !== 'string') {
+          errors.push(`Task missing valid title: ${JSON.stringify(importedTask)}`);
+          continue;
+        }
+
+        // Check for duplicates by title and creation date
+        const existingTask = tasks.find(task =>
+          task.title.trim().toLowerCase() === importedTask.title.trim().toLowerCase() &&
+          task.createdAt &&
+          importedTask.createdAt &&
+          new Date(task.createdAt).getTime() === new Date(importedTask.createdAt).getTime()
+        );
+
+        if (existingTask) {
+          if (skipDuplicates) {
+            skippedCount++;
+            continue;
+          } else if (updateExisting) {
+            // Update existing task
+            const taskIndex = tasks.findIndex(t => t._id === existingTask._id);
+            tasks[taskIndex] = {
+              ...existingTask,
+              title: importedTask.title.trim(),
+              description: importedTask.description?.trim(),
+              priority: importedTask.priority || 'Medium',
+              category: importedTask.category || 'General',
+              dueDate: importedTask.dueDate ? new Date(importedTask.dueDate) : null,
+              completed: importedTask.completed || false,
+              status: importedTask.status || 'To Do',
+              completionNotes: importedTask.completionNotes || [],
+              updatedAt: new Date()
+            };
+            updatedCount++;
+            continue;
+          } else {
+            errors.push(`Duplicate task found: "${importedTask.title}"`);
+            continue;
+          }
+        }
+
+        // Create new task
+        const newTask = {
+          _id: generateId(),
+          title: importedTask.title.trim(),
+          description: importedTask.description?.trim(),
+          priority: importedTask.priority || 'Medium',
+          category: importedTask.category || 'General',
+          dueDate: importedTask.dueDate ? new Date(importedTask.dueDate) : null,
+          completed: importedTask.completed || false,
+          status: importedTask.status || 'To Do',
+          completionNotes: importedTask.completionNotes || [],
+          createdAt: importedTask.createdAt ? new Date(importedTask.createdAt) : new Date(),
+          updatedAt: new Date()
+        };
+
+        tasks.push(newTask);
+        importedCount++;
+
+      } catch (taskError) {
+        errors.push(`Error importing task "${importedTask.title}": ${taskError.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Import completed. ${importedCount} tasks imported, ${updatedCount} updated, ${skippedCount} skipped.`,
+      stats: {
+        imported: importedCount,
+        updated: updatedCount,
+        skipped: skippedCount,
+        errors: errors.length,
+        totalProcessed: importData.tasks.length
+      },
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
