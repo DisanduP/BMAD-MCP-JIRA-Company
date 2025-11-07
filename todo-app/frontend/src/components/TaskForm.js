@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const TaskForm = ({ task, onSubmit, onCancel }) => {
+const TaskForm = ({ task, onSubmit, onCancel, categories = [] }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -146,12 +146,11 @@ const TaskForm = ({ task, onSubmit, onCancel }) => {
             onChange={handleChange}
             className="form-select"
           >
-            <option value="General">General</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
-            <option value="Shopping">Shopping</option>
-            <option value="Health">Health</option>
-            <option value="Learning">Learning</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
           </select>
         </div>
 

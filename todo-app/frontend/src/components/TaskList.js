@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = new Set(), onToggleSelection, onStartTask, onSubmitForReview, onAddNotes }) => {
+const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = new Set(), onToggleSelection, onStartTask, onSubmitForReview, onAddNotes, categories = [] }) => {
 
   const formatDueDate = (dueDate) => {
     if (!dueDate) return null;
@@ -97,9 +97,20 @@ const TaskList = ({ tasks, onEdit, onDelete, onToggleComplete, selectedTasks = n
                 )}
 
                 <div className="task-meta">
-                  <span className={`category-badge category-${task.category.toLowerCase()}`}>
-                    {task.category}
-                  </span>
+                  {(() => {
+                    const category = categories.find(cat => cat.name === task.category);
+                    return (
+                      <span
+                        className="category-badge"
+                        style={{
+                          backgroundColor: category ? category.color : '#6b7280',
+                          color: 'white'
+                        }}
+                      >
+                        {task.category}
+                      </span>
+                    );
+                  })()}
                   <span className={`priority-badge priority-${task.priority.toLowerCase()}`}>
                     {task.priority}
                   </span>

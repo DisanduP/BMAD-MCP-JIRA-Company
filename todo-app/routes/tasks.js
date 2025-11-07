@@ -7,12 +7,154 @@ const router = express.Router();
 let tasks = [];
 let nextId = 1;
 
+// In-memory storage for categories
+let categories = [
+  { id: '1', name: 'General', color: '#6b7280', createdAt: new Date() },
+  { id: '2', name: 'Work', color: '#3b82f6', createdAt: new Date() },
+  { id: '3', name: 'Personal', color: '#10b981', createdAt: new Date() },
+  { id: '4', name: 'Shopping', color: '#f59e0b', createdAt: new Date() },
+  { id: '5', name: 'Health', color: '#ef4444', createdAt: new Date() },
+  { id: '6', name: 'Learning', color: '#8b5cf6', createdAt: new Date() }
+];
+let nextCategoryId = 7;
+
 // Helper function to generate unique ID
 const generateId = () => {
   return (nextId++).toString();
 };
 
-// GET /api/tasks - Get all tasks with optional filtering
+// Helper function to generate unique category ID
+const generateCategoryId = () => {
+  return (nextCategoryId++).toString();
+};
+
+// ==================== CATEGORY MANAGEMENT ENDPOINTS ====================
+
+// GET /api/categories - Get all categories
+router.get('/categories', async (req, res) => {
+  try {
+    res.json({
+      categories: categories.sort((a, b) => a.name.localeCompare(b.name)),
+      total: categories.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/categories/:id - Get single category
+router.get('/categories/:id', async (req, res) => {
+  try {
+    const category = categories.find(c => c.id === req.params.id);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/categories - Create new category
+router.post('/categories', async (req, res) => {
+  try {
+    const { name, color } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    if (!color || !/^#[0-9A-F]{6}$/i.test(color)) {
+      return res.status(400).json({ error: 'Valid hex color is required (e.g., #ff0000)' });
+    }
+
+    // Check if category name already exists
+    const existingCategory = categories.find(c => c.name.toLowerCase() === name.trim().toLowerCase());
+    if (existingCategory) {
+      return res.status(400).json({ error: 'Category name already exists' });
+    }
+
+    const category = {
+      id: generateCategoryId(),
+      name: name.trim(),
+      color: color.toLowerCase(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    categories.push(category);
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/categories/:id - Update category
+router.put('/categories/:id', async (req, res) => {
+  try {
+    const { name, color } = req.body;
+    const categoryIndex = categories.findIndex(c => c.id === req.params.id);
+
+    if (categoryIndex === -1) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Category name is required' });
+      }
+
+      // Check if another category with this name exists
+      const existingCategory = categories.find(c =>
+        c.id !== req.params.id && c.name.toLowerCase() === name.trim().toLowerCase()
+      );
+      if (existingCategory) {
+        return res.status(400).json({ error: 'Category name already exists' });
+      }
+
+      categories[categoryIndex].name = name.trim();
+    }
+
+    if (color !== undefined) {
+      if (!color || !/^#[0-9A-F]{6}$/i.test(color)) {
+        return res.status(400).json({ error: 'Valid hex color is required (e.g., #ff0000)' });
+      }
+      categories[categoryIndex].color = color.toLowerCase();
+    }
+
+    categories[categoryIndex].updatedAt = new Date();
+    res.json(categories[categoryIndex]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/categories/:id - Delete category
+router.delete('/categories/:id', async (req, res) => {
+  try {
+    const categoryIndex = categories.findIndex(c => c.id === req.params.id);
+    if (categoryIndex === -1) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const category = categories[categoryIndex];
+
+    // Check if category is being used by any tasks
+    const tasksUsingCategory = tasks.filter(task => task.category === category.name);
+    if (tasksUsingCategory.length > 0) {
+      return res.status(400).json({
+        error: `Cannot delete category "${category.name}" because it is used by ${tasksUsingCategory.length} task(s). Please reassign or delete these tasks first.`
+      });
+    }
+
+    categories.splice(categoryIndex, 1);
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== TASK ENDPOINTS ====================
 router.get('/', async (req, res) => {
   try {
     const { status, priority, search, category, limit = 50, skip = 0 } = req.query;
@@ -89,12 +231,22 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Title is required' });
     }
 
+    // Validate category exists
+    let taskCategory = 'General'; // default
+    if (category) {
+      const categoryExists = categories.find(c => c.name === category);
+      if (!categoryExists) {
+        return res.status(400).json({ error: `Category "${category}" does not exist. Please create the category first or use an existing one.` });
+      }
+      taskCategory = category;
+    }
+
     const task = {
       _id: generateId(),
       title: title.trim(),
       description: description?.trim(),
       priority: priority || 'Medium',
-      category: category || 'General',
+      category: taskCategory,
       dueDate: dueDate ? new Date(dueDate) : null,
       completed: false,
       status: 'To Do', // New: Agile workflow status
@@ -145,7 +297,18 @@ router.put('/:id', async (req, res) => {
     if (title !== undefined) tasks[taskIndex].title = title.trim();
     if (description !== undefined) tasks[taskIndex].description = description?.trim();
     if (priority !== undefined) tasks[taskIndex].priority = priority;
-    if (category !== undefined) tasks[taskIndex].category = category;
+    
+    // Validate and update category
+    if (category !== undefined) {
+      if (category) {
+        const categoryExists = categories.find(c => c.name === category);
+        if (!categoryExists) {
+          return res.status(400).json({ error: `Category "${category}" does not exist. Please create the category first or use an existing one.` });
+        }
+      }
+      tasks[taskIndex].category = category || 'General';
+    }
+    
     if (dueDate !== undefined) tasks[taskIndex].dueDate = dueDate ? new Date(dueDate) : null;
     if (completed !== undefined) tasks[taskIndex].completed = completed;
 
