@@ -23,6 +23,9 @@ function App() {
   const [dateTo, setDateTo] = useState('');
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
   const [importStatus, setImportStatus] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
 
   // Debounce search term to avoid too many API calls
   useEffect(() => {
@@ -480,10 +483,104 @@ function App() {
     }
   };
 
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+      const data = await response.json();
+      setCategories(data.categories || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Create new category
+  const createCategory = async (categoryData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create category');
+      }
+
+      const newCategory = await response.json();
+      setCategories(prev => [...prev, newCategory]);
+      setShowCategoryManager(false);
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to create category: ' + err.message);
+    }
+  };
+
+  // Update category
+  const updateCategory = async (id, categoryData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update category');
+      }
+
+      const updatedCategory = await response.json();
+      setCategories(prev => prev.map(cat =>
+        cat.id === id ? updatedCategory : cat
+      ));
+      setEditingCategory(null);
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to update category: ' + err.message);
+    }
+  };
+
+  // Delete category
+  const deleteCategory = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this category? Tasks using this category will need to be reassigned.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete category');
+      }
+
+      setCategories(prev => prev.filter(cat => cat.id !== id));
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to delete category: ' + err.message);
+    }
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
   }, [debouncedSearchTerm, selectedCategory, fetchTasks]);
+
+  // Load categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   return (
     <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
@@ -591,12 +688,11 @@ function App() {
                     className="category-filter"
                   >
                     <option value="">All Categories</option>
-                    <option value="General">General</option>
-                    <option value="Work">Work</option>
-                    <option value="Personal">Personal</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Health">Health</option>
-                    <option value="Learning">Learning</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.name}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -657,6 +753,9 @@ function App() {
                   {importStatus}
                 </div>
               )}
+              <button onClick={() => setShowCategoryManager(true)} className="category-manager-button">
+                🏷️ Manage Categories
+              </button>
               <button
                 onClick={() => {
                   setEditingTask(null);
@@ -695,12 +794,11 @@ function App() {
                   defaultValue=""
                 >
                   <option value="" disabled>Change Category</option>
-                  <option value="General">General</option>
-                  <option value="Work">Work</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Shopping">Shopping</option>
-                  <option value="Health">Health</option>
-                  <option value="Learning">Learning</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
                 <button onClick={bulkDelete} className="bulk-action-button bulk-delete">
                   🗑️ Delete Selected
@@ -718,7 +816,163 @@ function App() {
                   setShowForm(false);
                   setEditingTask(null);
                 }}
+                categories={categories}
               />
+            </div>
+          )}
+
+          {/* Category Manager Modal */}
+          {showCategoryManager && (
+            <div className="modal-overlay" onClick={() => setShowCategoryManager(false)}>
+              <div className="modal-content category-manager-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Manage Categories</h2>
+                  <button
+                    onClick={() => setShowCategoryManager(false)}
+                    className="modal-close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  {/* Add New Category Form */}
+                  <div className="category-form">
+                    <h3>Add New Category</h3>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        const categoryData = {
+                          name: formData.get('name'),
+                          color: formData.get('color')
+                        };
+                        createCategory(categoryData);
+                        e.target.reset();
+                      }}
+                    >
+                      <div className="form-row">
+                        <input
+                          type="text"
+                          name="name"
+                          placeholder="Category name"
+                          required
+                          className="category-input"
+                        />
+                        <input
+                          type="color"
+                          name="color"
+                          defaultValue="#3b82f6"
+                          className="color-input"
+                        />
+                        <button type="submit" className="add-category-button">
+                          Add Category
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Existing Categories */}
+                  <div className="categories-list">
+                    <h3>Existing Categories</h3>
+                    {categories.length === 0 ? (
+                      <p>No categories found.</p>
+                    ) : (
+                      <div className="categories-grid">
+                        {categories.map(category => (
+                          <div key={category.id} className="category-item">
+                            <div className="category-info">
+                              <span
+                                className="category-color"
+                                style={{ backgroundColor: category.color }}
+                              ></span>
+                              <span className="category-name">{category.name}</span>
+                            </div>
+                            <div className="category-actions">
+                              <button
+                                onClick={() => setEditingCategory(category)}
+                                className="edit-category-button"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => deleteCategory(category.id)}
+                                className="delete-category-button"
+                                disabled={category.name === 'General'}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Category Modal */}
+          {editingCategory && (
+            <div className="modal-overlay" onClick={() => setEditingCategory(null)}>
+              <div className="modal-content edit-category-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Edit Category</h2>
+                  <button
+                    onClick={() => setEditingCategory(null)}
+                    className="modal-close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const categoryData = {
+                        name: formData.get('name'),
+                        color: formData.get('color')
+                      };
+                      updateCategory(editingCategory.id, categoryData);
+                    }}
+                  >
+                    <div className="form-group">
+                      <label>Category Name:</label>
+                      <input
+                        type="text"
+                        name="name"
+                        defaultValue={editingCategory.name}
+                        required
+                        className="category-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Color:</label>
+                      <input
+                        type="color"
+                        name="color"
+                        defaultValue={editingCategory.color}
+                        className="color-input"
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" className="update-category-button">
+                        Update Category
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategory(null)}
+                        className="cancel-button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
           )}
 
@@ -741,6 +995,7 @@ function App() {
               onStartTask={startTask}
               onSubmitForReview={submitForReview}
               onAddNotes={addCompletionNotes}
+              categories={categories}
             />
           )}
         </div>
