@@ -22,6 +22,7 @@ function App() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [importStatus, setImportStatus] = useState(null);
 
   // Debounce search term to avoid too many API calls
   useEffect(() => {
@@ -395,6 +396,90 @@ function App() {
     document.body.className = darkMode ? '' : 'dark-mode';
   };
 
+  // Export tasks to JSON file
+  const exportTasks = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/export`);
+      if (!response.ok) {
+        throw new Error('Failed to export tasks');
+      }
+
+      const data = await response.json();
+      const dataStr = JSON.stringify(data, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+      // Create download link
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tasks-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('Tasks exported successfully!');
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to export tasks: ' + err.message);
+    }
+  };
+
+  // Import tasks from JSON file
+  const importTasks = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      setImportStatus('Reading file...');
+      const fileContent = await file.text();
+      const importData = JSON.parse(fileContent);
+
+      // Validate import data structure
+      if (!importData.tasks || !Array.isArray(importData.tasks)) {
+        throw new Error('Invalid file format. Expected JSON with "tasks" array.');
+      }
+
+      setImportStatus('Importing tasks...');
+
+      const response = await fetch(`${API_BASE_URL}/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          importData,
+          options: {
+            skipDuplicates: false,
+            updateExisting: false
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to import tasks');
+      }
+
+      const result = await response.json();
+
+      setImportStatus(null);
+      alert(`Import completed!\n${result.stats.imported} tasks imported\n${result.stats.updated} tasks updated\n${result.stats.skipped} tasks skipped`);
+
+      // Refresh tasks list
+      fetchTasks();
+
+      // Clear file input
+      event.target.value = '';
+
+    } catch (err) {
+      setImportStatus(null);
+      setError(err.message);
+      alert('Failed to import tasks: ' + err.message);
+      event.target.value = '';
+    }
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
@@ -555,6 +640,23 @@ function App() {
               <button onClick={checkMergedPRs} className="check-prs-button">
                 🔄 Check Merged PRs
               </button>
+              <button onClick={exportTasks} className="export-button">
+                📤 Export Tasks
+              </button>
+              <label className="import-button">
+                📥 Import Tasks
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importTasks}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              {importStatus && (
+                <div className="import-status">
+                  {importStatus}
+                </div>
+              )}
               <button
                 onClick={() => {
                   setEditingTask(null);
@@ -628,7 +730,6 @@ function App() {
           ) : (
             <TaskList
               tasks={filteredTasks}
-              tasks={tasks}
               onEdit={(task) => {
                 setEditingTask(task);
                 setShowForm(true);
