@@ -104,6 +104,17 @@ export default [
     },
   },
 
+  // Backend Express.js app uses CommonJS
+  {
+    files: ['todo-app/**/*.js'],
+    rules: {
+      // Allow CommonJS patterns for Express.js backend
+      'unicorn/prefer-module': 'off',
+      'n/no-missing-require': 'off',
+      'n/no-unpublished-require': 'off',
+    },
+  },
+
   // ESLint config file should not be checked for publish-related Node rules
   {
     files: ['eslint.config.mjs'],

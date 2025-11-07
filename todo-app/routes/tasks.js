@@ -18,6 +18,10 @@ let categories = [
 ];
 let nextCategoryId = 7;
 
+// In-memory storage for task templates
+let taskTemplates = [];
+let nextTemplateId = 1;
+
 // Helper function to generate unique ID
 const generateId = () => {
   return (nextId++).toString();
@@ -26,6 +30,11 @@ const generateId = () => {
 // Helper function to generate unique category ID
 const generateCategoryId = () => {
   return (nextCategoryId++).toString();
+};
+
+// Helper function to generate unique template ID
+const generateTemplateId = () => {
+  return (nextTemplateId++).toString();
 };
 
 // ==================== CATEGORY MANAGEMENT ENDPOINTS ====================
@@ -154,6 +163,214 @@ router.delete('/categories/:id', async (req, res) => {
   }
 });
 
+// ==================== TEMPLATE MANAGEMENT ENDPOINTS ====================
+
+// GET /api/templates - Get all task templates
+router.get('/templates', async (req, res) => {
+  try {
+    res.json({
+      templates: taskTemplates.sort((a, b) => a.name.localeCompare(b.name)),
+      total: taskTemplates.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/templates/:id - Get single template
+router.get('/templates/:id', async (req, res) => {
+  try {
+    const template = taskTemplates.find(t => t.id === req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    res.json(template);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/templates - Create new template
+router.post('/templates', async (req, res) => {
+  try {
+    const { name, title, description, priority, category } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Template name is required' });
+    }
+
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Template title is required' });
+    }
+
+    // Check if template name already exists
+    const existingTemplate = taskTemplates.find(t => t.name.toLowerCase() === name.trim().toLowerCase());
+    if (existingTemplate) {
+      return res.status(400).json({ error: 'Template name already exists' });
+    }
+
+    // Validate category exists if provided
+    if (category) {
+      const categoryExists = categories.find(c => c.name === category);
+      if (!categoryExists) {
+        return res.status(400).json({ error: `Category "${category}" does not exist. Please create the category first or use an existing one.` });
+      }
+    }
+
+    const template = {
+      id: generateTemplateId(),
+      name: name.trim(),
+      title: title.trim(),
+      description: description?.trim(),
+      priority: priority || 'Medium',
+      category: category || 'General',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      usageCount: 0
+    };
+
+    taskTemplates.push(template);
+    res.status(201).json(template);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/templates/:id - Update template
+router.put('/templates/:id', async (req, res) => {
+  try {
+    const { name, title, description, priority, category } = req.body;
+    const templateIndex = taskTemplates.findIndex(t => t.id === req.params.id);
+
+    if (templateIndex === -1) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Template name is required' });
+      }
+
+      // Check if another template with this name exists
+      const existingTemplate = taskTemplates.find(t =>
+        t.id !== req.params.id && t.name.toLowerCase() === name.trim().toLowerCase()
+      );
+      if (existingTemplate) {
+        return res.status(400).json({ error: 'Template name already exists' });
+      }
+
+      taskTemplates[templateIndex].name = name.trim();
+    }
+
+    if (title !== undefined) {
+      if (!title || title.trim().length === 0) {
+        return res.status(400).json({ error: 'Template title is required' });
+      }
+      taskTemplates[templateIndex].title = title.trim();
+    }
+
+    if (description !== undefined) {
+      taskTemplates[templateIndex].description = description?.trim();
+    }
+
+    if (priority !== undefined) {
+      taskTemplates[templateIndex].priority = priority;
+    }
+
+    // Validate and update category
+    if (category !== undefined) {
+      if (category) {
+        const categoryExists = categories.find(c => c.name === category);
+        if (!categoryExists) {
+          return res.status(400).json({ error: `Category "${category}" does not exist. Please create the category first or use an existing one.` });
+        }
+      }
+      taskTemplates[templateIndex].category = category || 'General';
+    }
+
+    taskTemplates[templateIndex].updatedAt = new Date();
+    res.json(taskTemplates[templateIndex]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/templates/:id - Delete template
+router.delete('/templates/:id', async (req, res) => {
+  try {
+    const templateIndex = taskTemplates.findIndex(t => t.id === req.params.id);
+    if (templateIndex === -1) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    taskTemplates.splice(templateIndex, 1);
+    res.json({ message: 'Template deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/templates/:id/use - Create task from template
+router.post('/templates/:id/use', async (req, res) => {
+  try {
+    const template = taskTemplates.find(t => t.id === req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Create task from template
+    const task = {
+      _id: generateId(),
+      title: template.title,
+      description: template.description,
+      priority: template.priority,
+      category: template.category,
+      dueDate: null, // Templates don't include due dates
+      completed: false,
+      status: 'To Do',
+      completionNotes: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdFromTemplate: template.id
+    };
+
+    tasks.push(task);
+
+    // Increment template usage count
+    template.usageCount += 1;
+    template.updatedAt = new Date();
+
+    // Create Jira issue for tracking
+    try {
+      const jiraIssue = await jiraService.createIssue({
+        title: task.title,
+        description: task.description || 'No description provided',
+        priority: task.priority
+      });
+
+      // Update task with Jira issue key
+      task.jiraIssueKey = jiraIssue.key;
+      task.updatedAt = new Date();
+
+      console.log(`Jira issue created: ${jiraIssue.key} for task created from template: ${template.name}`);
+    } catch (jiraError) {
+      console.error('Jira issue creation failed:', jiraError);
+      // Continue without Jira integration
+    }
+
+    res.status(201).json({
+      task,
+      template: {
+        id: template.id,
+        name: template.name,
+        usageCount: template.usageCount
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== TASK ENDPOINTS ====================
 router.get('/', async (req, res) => {
   try {
@@ -191,16 +408,16 @@ router.get('/', async (req, res) => {
     filteredTasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Pagination
-    const startIndex = parseInt(skip);
-    const endIndex = startIndex + parseInt(limit);
+    const startIndex = Number.parseInt(skip);
+    const endIndex = startIndex + Number.parseInt(limit);
     const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
 
     res.json({
       tasks: paginatedTasks,
       pagination: {
         total: filteredTasks.length,
-        limit: parseInt(limit),
-        skip: parseInt(skip),
+        limit: Number.parseInt(limit),
+        skip: Number.parseInt(skip),
         hasMore: filteredTasks.length > endIndex
       }
     });
@@ -650,18 +867,35 @@ router.post('/check-merged-prs', async (req, res) => {
 // Mark all tasks as complete
 router.put('/mark-all-complete', async (req, res) => {
   try {
-    const result = await Task.updateMany(
-      { completed: false },
-      {
-        completed: true,
-        updatedAt: new Date()
+    const updatedTasks = [];
+    const jiraPromises = [];
+
+    // Update all incomplete tasks
+    for (const task of tasks) {
+      if (!task.completed) {
+        task.completed = true;
+        task.updatedAt = new Date();
+        updatedTasks.push(task);
+
+        // Jira Integration: Sync status changes
+        if (task.jiraIssueKey) {
+          jiraPromises.push(
+            jiraService.transitionIssue(task.jiraIssueKey, 'Done')
+              .catch(jiraError => console.error(`Jira sync failed for ${task.jiraIssueKey}:`, jiraError))
+          );
+        }
       }
-    );
+    }
+
+    // Wait for all Jira updates to complete
+    await Promise.allSettled(jiraPromises);
+
+    const modifiedCount = updatedTasks.length;
 
     res.json({
       success: true,
-      message: `Marked ${result.modifiedCount} tasks as complete`,
-      modifiedCount: result.modifiedCount
+      message: `Marked ${modifiedCount} tasks as complete`,
+      modifiedCount
     });
   } catch (error) {
     console.error('Error marking all complete:', error);
