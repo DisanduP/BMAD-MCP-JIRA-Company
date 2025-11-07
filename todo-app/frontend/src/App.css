@@ -1541,3 +1541,272 @@ body {
 .task-filter option {
   padding: 5px;
 }
+
+/* Template Manager Styles */
+.template-manager-button {
+  background: linear-gradient(135deg, #6f42c1, #5a32a3);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 10px;
+  box-shadow: 0 2px 4px rgba(111, 66, 193, 0.2);
+}
+
+.template-manager-button:hover {
+  background: linear-gradient(135deg, #5a32a3, #4c2a8a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+}
+
+.template-manager-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(111, 66, 193, 0.2);
+}
+
+.template-manager-modal,
+.edit-template-modal {
+  max-width: 800px;
+  width: 90%;
+}
+
+.template-form {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.template-form h3 {
+  margin: 0 0 20px 0;
+  color: #495057;
+  font-size: 18px;
+}
+
+.template-input,
+.template-textarea,
+.template-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.template-input:focus,
+.template-textarea:focus,
+.template-select:focus {
+  outline: none;
+  border-color: #6f42c1;
+  box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+}
+
+.template-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.add-template-button,
+.update-template-button {
+  background: linear-gradient(135deg, #6f42c1, #5a32a3);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(111, 66, 193, 0.2);
+}
+
+.add-template-button:hover,
+.update-template-button:hover {
+  background: linear-gradient(135deg, #5a32a3, #4c2a8a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+}
+
+.templates-list h3 {
+  margin: 0 0 20px 0;
+  color: #495057;
+  font-size: 18px;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.template-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.template-item:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.template-info {
+  margin-bottom: 12px;
+}
+
+.template-name {
+  margin: 0 0 8px 0;
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.template-title {
+  margin: 0 0 8px 0;
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.template-description {
+  margin: 0 0 10px 0;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.template-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.priority-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.priority-high {
+  background: #dc3545;
+  color: white;
+}
+
+.priority-medium {
+  background: #ffc107;
+  color: #212529;
+}
+
+.priority-low {
+  background: #28a745;
+  color: white;
+}
+
+.category-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #6c757d;
+  color: white;
+}
+
+.usage-count {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.template-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.use-template-button,
+.edit-template-button,
+.delete-template-button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.use-template-button {
+  background: #28a745;
+  color: white;
+}
+
+.use-template-button:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.edit-template-button {
+  background: #ffc107;
+  color: #212529;
+}
+
+.edit-template-button:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.delete-template-button {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-template-button:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}

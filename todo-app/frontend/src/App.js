@@ -26,6 +26,9 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
 
   // Debounce search term to avoid too many API calls
   useEffect(() => {
@@ -572,6 +575,116 @@ function App() {
     }
   };
 
+  // Fetch templates from API
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/templates`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch templates');
+      }
+      const data = await response.json();
+      setTemplates(data.templates || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Create new template
+  const createTemplate = async (templateData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create template');
+      }
+
+      const newTemplate = await response.json();
+      setTemplates(prev => [...prev, newTemplate]);
+      setShowTemplateManager(false);
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to create template: ' + err.message);
+    }
+  };
+
+  // Update template
+  const updateTemplate = async (id, templateData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/templates/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update template');
+      }
+
+      const updatedTemplate = await response.json();
+      setTemplates(prev => prev.map(template =>
+        template.id === id ? updatedTemplate : template
+      ));
+      setEditingTemplate(null);
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to update template: ' + err.message);
+    }
+  };
+
+  // Delete template
+  const deleteTemplate = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this template?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/templates/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete template');
+      }
+
+      setTemplates(prev => prev.filter(template => template.id !== id));
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to delete template: ' + err.message);
+    }
+  };
+
+  // Create task from template
+  const createTaskFromTemplate = async (templateId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/templates/${templateId}/use`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create task from template');
+      }
+
+      const result = await response.json();
+      setTasks(prev => [result.task, ...prev]);
+      alert(`Task created from template "${result.template.name}"!`);
+    } catch (err) {
+      setError(err.message);
+      alert('Failed to create task from template: ' + err.message);
+    }
+  };
+
   // Load tasks on component mount and when search or category changes
   useEffect(() => {
     fetchTasks();
@@ -580,6 +693,11 @@ function App() {
   // Load categories on component mount
   useEffect(() => {
     fetchCategories();
+  }, []);
+
+  // Load templates on component mount
+  useEffect(() => {
+    fetchTemplates();
   }, []);
 
   return (
@@ -755,6 +873,9 @@ function App() {
               )}
               <button onClick={() => setShowCategoryManager(true)} className="category-manager-button">
                 🏷️ Manage Categories
+              </button>
+              <button onClick={() => setShowTemplateManager(true)} className="template-manager-button">
+                📋 Manage Templates
               </button>
               <button
                 onClick={() => {
@@ -965,6 +1086,250 @@ function App() {
                       <button
                         type="button"
                         onClick={() => setEditingCategory(null)}
+                        className="cancel-button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Template Manager Modal */}
+          {showTemplateManager && (
+            <div className="modal-overlay" onClick={() => setShowTemplateManager(false)}>
+              <div className="modal-content template-manager-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Manage Task Templates</h2>
+                  <button
+                    onClick={() => setShowTemplateManager(false)}
+                    className="modal-close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  {/* Add New Template Form */}
+                  <div className="template-form">
+                    <h3>Create New Template</h3>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        const templateData = {
+                          name: formData.get('name'),
+                          title: formData.get('title'),
+                          description: formData.get('description'),
+                          priority: formData.get('priority'),
+                          category: formData.get('category')
+                        };
+                        createTemplate(templateData);
+                        e.target.reset();
+                      }}
+                    >
+                      <div className="form-group">
+                        <label>Template Name:</label>
+                        <input
+                          type="text"
+                          name="name"
+                          placeholder="e.g., Bug Report, Feature Request"
+                          required
+                          className="template-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Default Task Title:</label>
+                        <input
+                          type="text"
+                          name="title"
+                          placeholder="e.g., Fix login validation bug"
+                          required
+                          className="template-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Default Description:</label>
+                        <textarea
+                          name="description"
+                          placeholder="Default task description..."
+                          className="template-textarea"
+                          rows="3"
+                        />
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Default Priority:</label>
+                          <select name="priority" className="template-select" defaultValue="Medium">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Default Category:</label>
+                          <select name="category" className="template-select" defaultValue="General">
+                            {categories.map(category => (
+                              <option key={category.id} value={category.name}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <button type="submit" className="add-template-button">
+                        Create Template
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Existing Templates */}
+                  <div className="templates-list">
+                    <h3>Existing Templates</h3>
+                    {templates.length === 0 ? (
+                      <p>No templates found. Create your first template above!</p>
+                    ) : (
+                      <div className="templates-grid">
+                        {templates.map(template => (
+                          <div key={template.id} className="template-item">
+                            <div className="template-info">
+                              <h4 className="template-name">{template.name}</h4>
+                              <p className="template-title">{template.title}</p>
+                              {template.description && (
+                                <p className="template-description">{template.description}</p>
+                              )}
+                              <div className="template-meta">
+                                <span className={`priority-badge priority-${template.priority.toLowerCase()}`}>
+                                  {template.priority}
+                                </span>
+                                <span className={`category-badge category-${template.category.toLowerCase()}`}>
+                                  {template.category}
+                                </span>
+                                <span className="usage-count">
+                                  Used {template.usageCount} time{template.usageCount !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="template-actions">
+                              <button
+                                onClick={() => createTaskFromTemplate(template.id)}
+                                className="use-template-button"
+                                title="Create task from this template"
+                              >
+                                ➕ Use
+                              </button>
+                              <button
+                                onClick={() => setEditingTemplate(template)}
+                                className="edit-template-button"
+                                title="Edit template"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => deleteTemplate(template.id)}
+                                className="delete-template-button"
+                                title="Delete template"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Template Modal */}
+          {editingTemplate && (
+            <div className="modal-overlay" onClick={() => setEditingTemplate(null)}>
+              <div className="modal-content edit-template-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Edit Template</h2>
+                  <button
+                    onClick={() => setEditingTemplate(null)}
+                    className="modal-close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const templateData = {
+                        name: formData.get('name'),
+                        title: formData.get('title'),
+                        description: formData.get('description'),
+                        priority: formData.get('priority'),
+                        category: formData.get('category')
+                      };
+                      updateTemplate(editingTemplate.id, templateData);
+                    }}
+                  >
+                    <div className="form-group">
+                      <label>Template Name:</label>
+                      <input
+                        type="text"
+                        name="name"
+                        defaultValue={editingTemplate.name}
+                        required
+                        className="template-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Default Task Title:</label>
+                      <input
+                        type="text"
+                        name="title"
+                        defaultValue={editingTemplate.title}
+                        required
+                        className="template-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Default Description:</label>
+                      <textarea
+                        name="description"
+                        defaultValue={editingTemplate.description || ''}
+                        className="template-textarea"
+                        rows="3"
+                      />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Default Priority:</label>
+                        <select name="priority" className="template-select" defaultValue={editingTemplate.priority}>
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Default Category:</label>
+                        <select name="category" className="template-select" defaultValue={editingTemplate.category}>
+                          {categories.map(category => (
+                            <option key={category.id} value={category.name}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" className="update-template-button">
+                        Update Template
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingTemplate(null)}
                         className="cancel-button"
                       >
                         Cancel
