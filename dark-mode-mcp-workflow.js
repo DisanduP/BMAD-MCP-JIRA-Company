@@ -139,7 +139,10 @@ class CompleteMCPWorkflow {
 
     try {
       // Use Git MCP to create and checkout branch
-      execSync(`cd "${this.repoPath}" && npx github-mcp-server git-checkout -b ${branchName}`, { stdio: 'pipe' });
+      execSync(`cd "${this.repoPath}" && npx github-mcp-server git-checkout v6-alpha`, { stdio: 'pipe' });
+      execSync(`cd "${this.repoPath}" && npx github-mcp-server git-pull`, { stdio: 'pipe' });
+      execSync(`cd "${this.repoPath}" && npx github-mcp-server git-branch ${branchName}`, { stdio: 'pipe' });
+      execSync(`cd "${this.repoPath}" && npx github-mcp-server git-checkout ${branchName}`, { stdio: 'pipe' });
       return branchName;
     } catch (error) {
       console.log('⚠️ Git MCP failed, using direct Git commands...');
